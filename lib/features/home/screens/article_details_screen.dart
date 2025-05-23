@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter_html/flutter_html.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:alemedu_app/features/home/providers/articles_provider.dart';
 import 'package:alemedu_app/features/home/models/article_model.dart';
 import 'package:alemedu_app/features/home/screens/download_screen.dart';
@@ -43,24 +44,49 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
   }
 
   Future<void> _loadData() async {
-    if (_isFirstLoad) {
-
-      
-      // Get the selected database from ArticlesProvider
+    if (!_isFirstLoad) return;
+    
+    try {
+      // Obtenemos los providers sin activar una reconstrucción
       final articlesProvider = Provider.of<ArticlesProvider>(context, listen: false);
-      final selectedDatabase = articlesProvider.selectedDatabase;
-
-      
-      // Update the database in CommentsProvider
       final commentsProvider = Provider.of<CommentsProvider>(context, listen: false);
+      
+      // Obtenemos la base de datos seleccionada
+      final selectedDatabase = articlesProvider.selectedDatabase;
+      
+      // Actualizamos la base de datos en CommentsProvider
       commentsProvider.updateSelectedDatabase(selectedDatabase);
       
-      // Fetch article details and comments
-      await articlesProvider.fetchArticleDetails(widget.articleId);
-      await commentsProvider.loadComments(widget.articleId);
+      // Cargamos los datos en paralelo para mejorar el rendimiento
+      await Future.wait([
+        articlesProvider.fetchArticleDetails(widget.articleId),
+        commentsProvider.loadComments(widget.articleId)
+      ]);
       
-      _isFirstLoad = false;
-
+      if (mounted) {
+        setState(() {
+          _isFirstLoad = false;
+        });
+      }
+    } catch (e, stackTrace) {
+      // Manejo de errores para evitar que la aplicación se bloquee
+      debugPrint('Error al cargar los datos del artículo: $e');
+      debugPrint(stackTrace.toString());
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar los datos: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+            action: SnackBarAction(
+              label: 'Reintentar',
+              onPressed: () => _loadData(),
+              textColor: Colors.white,
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -350,10 +376,18 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
 
               child: Html(
                 data: article.content.replaceAll(
-                  RegExp(r'src="\/storage'),
+                  RegExp(r'src="/storage'),
                   'src="https://alemedu.com/storage'
-
                 ),
+                // Optimizamos la carga de contenido HTML
+                onLinkTap: (url, _, __) {
+                  // Manejamos los enlaces de manera segura fuera del hilo principal
+                  if (url != null) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      launchUrl(Uri.parse(url));
+                    });
+                  }
+                },
                 style: {
                   "body": Style(
                     fontSize: FontSize(16),
@@ -436,22 +470,33 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                           ),
                         ],
                       ),
+                      subtitle: Text(
+                        '${file.fileType} • ${file.downloadCount} تحميل',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
                       trailing: IconButton(
-                        icon: const Icon(Icons.download),
+                        icon: const Icon(Icons.download, color: AppColors.primaryColor),
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => DownloadScreen(
-                                fileUrl: 'https://alemedu.com/storage/${file.filePath}',
-                                fileName: file.fileName,
+                          // Usamos addPostFrameCallback para asegurarnos de que la navegación
+                          // ocurra después de que se complete el frame actual
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => DownloadScreen(
+                                  fileUrl: 'https://alemedu.com/storage/${file.filePath}',
+                                  fileName: file.fileName,
+                                ),
                               ),
-                            ),
-                          );
+                            );
+                          });
                         },
                       ),
                     ),
-                  )),
+                  )).toList(),
                 ],
               ),
             ),

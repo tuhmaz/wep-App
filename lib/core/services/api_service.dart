@@ -34,9 +34,16 @@ class ApiService {
   static const String _apiKeyStorageKey = 'api_key';
   static const String _validApiKey = 'gfOTaGfOcVZigVyN3Go5ZHwr606mmzlPs6gfet0Nsd6d5wBykGGsI9rf1zZ0UYsZ';
   // Private fields.
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage(
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
   //get storage instance.
   FlutterSecureStorage get storage => _storage;
+  
+  // Cache for API key to avoid frequent disk reads
+  String? _cachedApiKey;
+  String? _cachedToken;
 
   String? _token; // Store the current token
 
@@ -53,14 +60,40 @@ class ApiService {
   // This function is called only once at app start
 
   Future<void> initialize() async {    
-    final storedApiKey = await _storage.read(key: _apiKeyStorageKey);
-    if (storedApiKey == null || storedApiKey.isEmpty) {
-      await _storage.write(key: _apiKeyStorageKey, value: _validApiKey);
+    // استخدام قراءة مباشرة بدلاً من compute لتجنب مشاكل التهيئة
+    try {
+      final storedApiKey = await _storage.read(key: _apiKeyStorageKey);
+      if (storedApiKey == null || storedApiKey.isEmpty) {
+        await _storage.write(key: _apiKeyStorageKey, value: _validApiKey);
+        _cachedApiKey = _validApiKey;
+      } else {
+        _cachedApiKey = storedApiKey;
+      }
+      
+      // تخزين القيمة في الذاكرة المؤقتة لتجنب القراءة المتكررة
+      _cachedApiKey = _cachedApiKey ?? _validApiKey;
+    } catch (e) {
+      print('خطأ في تهيئة API Key: $e');
+      // استخدام القيمة الافتراضية في حالة الخطأ
+      _cachedApiKey = _validApiKey;
     }
   }
+  
+  // تم إزالة الدوال الثابتة غير المستخدمة
 
     Future<String?> getToken() async {
-      return _token ?? await _storage.read(key: 'token');
+      if (_token != null) return _token;
+      if (_cachedToken != null) return _cachedToken;
+      
+      try {
+        // استخدام قراءة مباشرة بدلاً من compute لتجنب مشاكل التهيئة
+        final token = await _storage.read(key: 'token');
+        _cachedToken = token;
+        return token;
+      } catch (e) {
+        print('خطأ في قراءة التوكن: $e');
+        return null;
+      }
     }
 
   // التحقق من صلاحية API Key
@@ -70,54 +103,64 @@ class ApiService {
 
   Future<String> getApiKey() async {
     try {
+      // إذا كان المفتاح موجود في الذاكرة المؤقتة، استخدمه مباشرة
+      if (_cachedApiKey != null && _cachedApiKey!.isNotEmpty) {
+        return _cachedApiKey!;
+      }
+      
       // The correct API key provided by the server
       const correctApiKey = 'gfOTaGfOcVZigVyN3Go5ZHwr606mmzlPs6gfet0Nsd6d5wBykGGsI9rf1zZ0UYsZ';
 
-      // Try to get API key from both secure storage and shared preferences
+      // استخدام قراءة مباشرة بدلاً من compute
       final apiKey = await _storage.read(key: _apiKeyStorageKey);
+      
+      // استخدام SharedPreferences بشكل مباشر
       final prefs = await SharedPreferences.getInstance();
+      final prefsApiKey = prefs.getString('apiKey');
 
       // Check if API key exists in shared preferences
-      if (prefs.containsKey('apiKey')) {
-        final prefsApiKey = prefs.getString('apiKey');
-        // If the key in shared preferences is valid , store it in secure storage for consistency, and use it
-        if (prefsApiKey != null && prefsApiKey.isNotEmpty) {
-          // Also store it in secure storage for consistency
-          await _storage.write(key: _apiKeyStorageKey, value: prefsApiKey);
-          return prefsApiKey;
-        }
+      if (prefsApiKey != null && prefsApiKey.isNotEmpty) {
+        // Also store it in secure storage for consistency
+        await _storage.write(key: _apiKeyStorageKey, value: prefsApiKey);
+        _cachedApiKey = prefsApiKey;
+        return prefsApiKey;
       }
       
       // If API key is found in secure storage, store it in shared preferences too, and use it.
-      if (apiKey != null) {        
+      if (apiKey != null && apiKey.isNotEmpty) {        
         // Store it in shared preferences too
         await prefs.setString('apiKey', apiKey);
+        _cachedApiKey = apiKey;
         return apiKey;    
       } else {
-
-
         // Store the correct key in both storages for future use
         await _storage.write(key: _apiKeyStorageKey, value: correctApiKey);
         await prefs.setString('apiKey', correctApiKey);
         
+        _cachedApiKey = correctApiKey;
         return correctApiKey;
       }
     } catch (e) {
-
+      print('خطأ في الحصول على API Key: $e');
       // Fallback to the correct API key in case of any errors.
       const correctApiKey = 'gfOTaGfOcVZigVyN3Go5ZHwr606mmzlPs6gfet0Nsd6d5wBykGGsI9rf1zZ0UYsZ';
       
-      // Try to store it in shared preferences as a last resort
+      // حفظ المفتاح في الذاكرة المؤقتة
+      _cachedApiKey = correctApiKey;
+      
+      // محاولة تخزينه في SharedPreferences كملاذ أخير
       try {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('apiKey', correctApiKey);
-      } catch (e) {   
-        print('Failed to store API key in shared preferences: $e');
+      } catch (e) {
+        print('فشل تخزين API key في SharedPreferences: $e');
       }
       
       return correctApiKey;
     }
   }
+  
+  // تم إزالة الدوال الثابتة الإضافية غير المستخدمة
 
   Future<Map<String, String>> getHeaders({bool isMultipart = false}) async {    
     try {
@@ -378,10 +421,16 @@ class ApiService {
   }
   //get the stored user data from local storage.
   Future<Map<String, dynamic>> getCurrentUserData() async {
-    final userData = await storage.read(key: 'user_data');
-    if (userData != null) {
-      return json.decode(userData);
+    try {
+      // استخدام قراءة مباشرة بدلاً من compute
+      final userData = await _storage.read(key: 'user_data');
+      if (userData != null) {
+        return json.decode(userData);
+      }
+    } catch (e) {
+      print('خطأ في قراءة بيانات المستخدم: $e');
     }
+    
     // إرجاع بيانات مستخدم افتراضية إذا لم تكن متوفرة
     return {
       'id': 0,

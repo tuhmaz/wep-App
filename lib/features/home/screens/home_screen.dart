@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:math' as math;
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../../core/constants/colors.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -13,7 +12,6 @@ import '../../../core/models/news_model.dart';  // تصحيح المسار
 import 'subjects_screen.dart';
 import 'news_details_screen.dart';
 import 'package:extended_image/extended_image.dart';
-import '../../privacy_policy_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,40 +22,57 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
 
-  // TODO: Add _bannerAd
   late BannerAd _bannerAd;
-
-  // TODO: Add _isBannerAdReady
   bool _isBannerAdReady = false;
 
-  // TODO: Add _loadBannerAd()
+  @override
+  void initState() {
+    super.initState();
+    _loadBannerAd();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadInitialData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _bannerAd.dispose();
+    super.dispose();
+  }
+
   void _loadBannerAd() {
     _bannerAd = BannerAd(
-      adUnitId: 'ca-app-pub-3940256099942544/6300978111',
-      request: const AdRequest(),
+      adUnitId: 'ca-app-pub-3940256099942544/6300978111', // استخدم معرف الإعلان الخاص بك في الإنتاج
       size: AdSize.banner,
+      request: const AdRequest(),
       listener: BannerAdListener(
-        // Called when an ad is successfully received.
-        onAdLoaded: (ad) {
+        onAdLoaded: (_) {
           setState(() {
             _isBannerAdReady = true;
           });
         },
-        // Called when an ad request failed.
-        onAdFailedToLoad: (ad, err) {
+        onAdFailedToLoad: (ad, error) {
           setState(() {
             _isBannerAdReady = false;
           });
-          // Dispose the ad here to free resources.
           ad.dispose();
-
         },
       ),
-    )..load();
+    );
+
+    _bannerAd.load();
+  }
+  
+  Future<void> _loadInitialData() async {
+    final newsProvider = context.read<NewsProvider>();
+    await newsProvider.setDatabase(_selectedDatabase);
+    await newsProvider.fetchNews(refresh: true);
+    Provider.of<ClassesProvider>(context, listen: false)
+        .fetchClasses(_selectedDatabase);
   }
 
+
   String _selectedDatabase = 'jo';
-  final _random = math.Random();
 
   final Map<String, String> _countries = {
     'jo': 'الأردن',
@@ -65,87 +80,6 @@ class _HomeScreenState extends State<HomeScreen> {
     'eg': 'مصر',
     'ps': 'فلسطين',
   };
-
-  // قائمة من الألوان الجميلة للأزرار
-  final List<List<Color>> _buttonColors = [
-    [const Color(0xFF4CAF50), const Color(0xFF388E3C)], // أخضر
-    [const Color(0xFF2196F3), const Color(0xFF1976D2)], // أزرق
-    [const Color(0xFF9C27B0), const Color(0xFF7B1FA2)], // بنفسجي
-    [const Color(0xFFE91E63), const Color(0xFFC2185B)], // وردي
-    [const Color(0xFFFF9800), const Color(0xFFF57C00)], // برتقالي
-  ];
-
-  // دالة للحصول على أيقونة مناسبة للصف
-  IconData _getGradeIcon(String title) {
-    if (title.contains('الأول')) {
-      return Icons.looks_one;
-    } else if (title.contains('الثاني')) {
-      return Icons.looks_two;
-    } else if (title.contains('الثالث')) {
-      return Icons.looks_3;
-    } else if (title.contains('الرابع')) {
-      return Icons.looks_4;
-    } else if (title.contains('الخامس')) {
-      return Icons.looks_5;
-    } else if (title.contains('السادس')) {
-      return Icons.looks_6;
-    } else if (title.contains('السابع')) {
-      return Icons.filter_7;
-    } else if (title.contains('الثامن')) {
-      return Icons.filter_8;
-    } else if (title.contains('التاسع')) {
-      return Icons.filter_9;
-    } else if (title.contains('العاشر')) {
-      return Icons.filter_9_plus;
-    } else if (title.contains('الحادي عشر')) {
-      return Icons.school;
-    } else if (title.contains('الثاني عشر')) {
-      return Icons.school;
-    }
-    return Icons.class_;
-  }
-
-  // دالة للحصول على أيقونة الخلفية المناسبة للصف
-  IconData _getBackgroundIcon(String title) {
-    if (title.contains('الأول')) {
-      return Icons.auto_stories;
-    } else if (title.contains('الثاني')) {
-      return Icons.menu_book;
-    } else if (title.contains('الثالث')) {
-      return Icons.library_books;
-    } else if (title.contains('الرابع')) {
-      return Icons.science;
-    } else if (title.contains('الخامس')) {
-      return Icons.calculate;
-    } else if (title.contains('السادس')) {
-      return Icons.psychology;
-    } else if (title.contains('السابع')) {
-      return Icons.biotech;
-    } else if (title.contains('الثامن')) {
-      return Icons.functions;
-    } else if (title.contains('التاسع')) {
-      return Icons.architecture;
-    } else if (title.contains('العاشر')) {
-      return Icons.engineering;
-    } else if (title.contains('الحادي عشر')) {
-      return Icons.analytics;
-    } else if (title.contains('الثاني عشر')) {
-      return Icons.school;
-    }
-    return Icons.class_;
-  }
-
-  List<Color> _getRandomGradientColors() {
-    final List<List<Color>> gradients = [
-      [Colors.blue[400]!, Colors.blue[600]!],
-      [Colors.purple[400]!, Colors.purple[600]!],
-      [Colors.green[400]!, Colors.green[600]!],
-      [Colors.orange[400]!, Colors.orange[600]!],
-      [Colors.pink[400]!, Colors.pink[600]!],
-      [Colors.teal[400]!, Colors.teal[600]!],
-    ];
-    return gradients[math.Random().nextInt(gradients.length)];
-  }
 
   Widget _bannerAdWidget() {
       if (!_isBannerAdReady) {
@@ -158,26 +92,6 @@ class _HomeScreenState extends State<HomeScreen> {
       child: _isBannerAdReady ? AdWidget(ad: _bannerAd) : const SizedBox.shrink(),
     );
 
-  }
-
-  // Get color for grade level
-  Color _getColorForGrade(int gradeLevel) {
-    final colors = [
-      Color(0xFF2196F3),  // أزرق فاتح
-      Color(0xFF4CAF50),  // أخضر
-      Color(0xFF9C27B0),  // بنفسجي
-      Color(0xFF3F51B5),  // نيلي
-      Color(0xFFE91E63),  // وردي
-      Color(0xFF009688),  // فيروزي
-      Color(0xFF673AB7),  // بنفسجي غامق
-      Color(0xFFF44336),  // أحمر
-      Color(0xFF795548),  // بني
-      Color(0xFF607D8B),  // رمادي مزرق
-      Color(0xFF00BCD4),  // سماوي
-      Color(0xFFFF5722),  // برتقالي محمر
-    ];
-    
-    return colors[(gradeLevel - 1) % colors.length];
   }
 
   void _handleGradeSelection(int gradeLevel) {
@@ -208,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(15),
             boxShadow: [
               BoxShadow(
-                color: _getColorForGrade(gradeLevel).withOpacity(0.2),
+                color: Colors.blue.withOpacity(0.2),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
                 spreadRadius: 1,
@@ -220,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
             border: Border.all(
-              color: _getColorForGrade(gradeLevel).withOpacity(0.1),
+              color: Colors.blue.withOpacity(0.1),
               width: 1,
             ),
           ),
@@ -229,22 +143,14 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 width: 65,
                 decoration: BoxDecoration(
-                  color: _getColorForGrade(gradeLevel),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      _getColorForGrade(gradeLevel),
-                      _getColorForGrade(gradeLevel).withOpacity(0.8),
-                    ],
-                  ),
+                  color: Colors.blue,
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(15),
                     bottomLeft: Radius.circular(15),
                   ),
                 ),
                 child: Icon(
-                  _getIconForGrade(gradeLevel),
+                  Icons.looks_one,
                   color: Colors.white,
                   size: 28,
                 ),
@@ -255,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   decoration: BoxDecoration(
                     border: Border(
                       left: BorderSide(
-                        color: _getColorForGrade(gradeLevel).withOpacity(0.1),
+                        color: Colors.blue.withOpacity(0.1),
                         width: 1,
                       ),
                     ),
@@ -273,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       Icon(
                         Icons.arrow_forward_ios,
-                        color: _getColorForGrade(gradeLevel),
+                        color: Colors.blue,
                         size: 18,
                       ),
                     ],
@@ -400,11 +306,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 final color = newsProvider.getCategoryColor(category);
                 final icon = newsProvider.getCategoryIcon(category);
                 
-                // عدد الأخبار في هذه الفئة
-                final newsCount = newsProvider.news
-                    .where((news) => news.category?.name == category)
-                    .length;
-
                 return _buildCategoryCard(context, category, newsProvider);
               },
             ),
@@ -464,7 +365,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCategoryCard(BuildContext context, String category, NewsProvider newsProvider) {
     final isSelected = newsProvider.selectedCategory == category;
-    final newsCount = newsProvider.getNewsCountForCategory(category);
 
     return Padding(
       padding: const EdgeInsets.all(8.0),
@@ -527,23 +427,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         textAlign: TextAlign.center,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: 4),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: isSelected 
-                            ? Colors.white.withOpacity(0.2)
-                            : Theme.of(context).primaryColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '$newsCount مقال',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isSelected ? Colors.white : Theme.of(context).primaryColor,
-                          ),
-                        ),
                       ),
                     ],
                   ),
@@ -674,29 +557,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _loadBannerAd();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadInitialData();
-    });
-  }
 
-  Future<void> _loadInitialData() async {
-    final newsProvider = context.read<NewsProvider>();
-    await newsProvider.setDatabase(_selectedDatabase);
-    await newsProvider.fetchNews(refresh: true);
-    Provider.of<ClassesProvider>(context, listen: false)
-        .fetchClasses(_selectedDatabase);
-  }
 
-  @override
-  void dispose() {
-    _bannerAd.dispose();
-    super.dispose();
-    
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -814,7 +677,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         padding: const EdgeInsets.all(16),
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 1,
-                          childAspectRatio: 3.5,
                           mainAxisSpacing: 16,
                         ),
                         itemCount: classesProvider.classes.length,
@@ -835,51 +697,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Get icon for grade level
-  IconData _getIconForGrade(int gradeLevel) {
-    switch (gradeLevel) {
-      case 1:
-        return Icons.looks_one;
-      case 2:
-        return Icons.looks_two;
-      case 3:
-        return Icons.looks_3;
-      case 4:
-        return Icons.looks_4;
-      case 5:
-        return Icons.looks_5;
-      case 6:
-        return Icons.looks_6;
-      case 7:
-        return Icons.auto_awesome;  // نجمة متوهجة للصف السابع
-      case 8:
-        return Icons.grade;  // نجمة للصف الثامن
-      case 9:
-        return Icons.stars;  // نجوم متعددة للصف التاسع
-      case 10:
-        return Icons.workspace_premium;  // أيقونة مميزة للصف العاشر
-      case 11:
-        return Icons.psychology;  // أيقونة تفكير للصف الحادي عشر
-      case 12:
-        return Icons.school;  // أيقونة مدرسة للصف الثاني عشر
-      default:
-        return Icons.class_;
-    }
-  }
 
-  // Get gradient colors for grade level
-  List<Color> _getGradientColorsForGrade(int gradeLevel) {
-    if (gradeLevel <= 6) {
-      // الصفوف الأساسية - تدرجات الأزرق
-      return [Colors.blue[300]!, Colors.blue[600]!];
-    } else if (gradeLevel <= 9) {
-      // الصفوف المتوسطة - تدرجات الأخضر
-      return [Colors.green[300]!, Colors.green[600]!];
-    } else {
-      // الصفوف الثانوية - تدرجات البنفسجي
-      return [Colors.purple[300]!, Colors.purple[600]!];
-    }
-  }
+
+
 }
 
 // Custom Pattern Painter for Selected Category Cards
