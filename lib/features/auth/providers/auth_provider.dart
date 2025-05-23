@@ -10,48 +10,23 @@ import 'dart:convert';
 class AuthProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
   final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
-  final _storage = const FlutterSecureStorage(
-    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-  );
+  final _storage = const FlutterSecureStorage();
 
   UserModel? _user;
   String? _token;
   String? _error;
   bool _isLoading = false;
-  
-  // تخزين مؤقت للبيانات لتجنب القراءة المتكررة من التخزين
-  String? _cachedToken;
-  Map<String, dynamic>? _cachedUserData;
 
   UserModel? get user => _user;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _user != null;
   String? get error => _error; // Added to the getter
 
-  // تم إزالة الدوال المساعدة والدوال الثابتة غير المستخدمة
-
   Future<void> loadStoredToken() async {
-    // استخدام التخزين المؤقت إذا كان متوفراً
-    if (_cachedToken != null) {
-      _token = _cachedToken;
-      if (_token != null) {
-        ApiService().addTokenToHeaders(_token!);
-      }
-      return;
-    }
-    
-    try {
-      final token = await _storage.read(key: 'token');
-      _token = token;
-      _cachedToken = token; // تخزين في الذاكرة المؤقتة
-      if (_token != null) {
-        ApiService().addTokenToHeaders(_token!);
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('خطأ في تحميل التوكن: $e');
-      }
+    final token = await _storage.read(key: 'token');
+    _token = token;
+    if (_token != null) {
+      ApiService().addTokenToHeaders(_token!);
     }
   }
 
@@ -87,8 +62,6 @@ class AuthProvider extends ChangeNotifier {
       final data = response['data'];
       final newToken = data['token'];
       _token = newToken;
-      _cachedToken = newToken; // تخزين في الذاكرة المؤقتة
-      // كتابة التوكن مباشرة
       await _storage.write(key: 'token', value: newToken);
       return newToken;
     }
@@ -143,7 +116,7 @@ class AuthProvider extends ChangeNotifier {
         if (data['token'] != null && data['user'] != null) {
           _token = data['token'];
 
-          await _storage.write(key: 'token', value: _token); // كتابة التوكن في الخيط الرئيسي
+          await _storage.write(key: 'token', value: _token);
           _user = UserModel.fromJson(data['user']);
           await setCurrentUser(_user!);
           notifyListeners();
@@ -186,10 +159,8 @@ class AuthProvider extends ChangeNotifier {
         final data = response['data'];
         if (data['token'] != null && data['user'] != null) {
           _token = data['token'];
-          _cachedToken = _token; // تخزين في الذاكرة المؤقتة
           _apiService.addTokenToHeaders(_token!);
-          // كتابة التوكن مباشرة
-          await _storage.write(key: 'token', value: _token!);
+          await _storage.write(key: 'token', value: _token);
           _user = UserModel.fromJson(data['user']);
 
           await setCurrentUser(_user!);
@@ -270,11 +241,9 @@ class AuthProvider extends ChangeNotifier {
         final data = response['data'];
         if (data['token'] != null && data['user'] != null) {
           _token = data['token'];
-          _cachedToken = _token; // تخزين في الذاكرة المؤقتة
           _apiService.addTokenToHeaders(_token!);
 
-          // كتابة التوكن مباشرة
-          await _storage.write(key: 'token', value: _token!);
+          await _storage.write(key: 'token', value: _token);
           _user = UserModel.fromJson(data['user']);
           await setCurrentUser(_user!);
           notifyListeners();
@@ -299,44 +268,20 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> setCurrentUser(UserModel user) async {
-    final userData = jsonEncode(user.toJson());
-    _cachedUserData = user.toJson(); // تخزين في الذاكرة المؤقتة
-    // كتابة بيانات المستخدم مباشرة
-    await _storage.write(key: 'user', value: userData);
+    await _storage.write(key: 'user', value: jsonEncode(user.toJson()));
   }
 
   Future<void> loadStoredUser() async {
     await loadStoredToken();
-    
-    // استخدام البيانات المخزنة مؤقتاً إذا كانت متوفرة
-    if (_cachedUserData != null) {
-      _user = UserModel.fromJson(_cachedUserData!);
+    final storedUser = await _storage.read(key: 'user');
+    if (storedUser != null) {
+      _user = UserModel.fromJson(jsonDecode(storedUser));
       notifyListeners();
-      return;
-    }
-    
-    try {
-      final storedUser = await _storage.read(key: 'user');
-      if (storedUser != null) {
-        final userData = jsonDecode(storedUser);
-        _cachedUserData = userData; // تخزين في الذاكرة المؤقتة
-        _user = UserModel.fromJson(userData);
-        notifyListeners();
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('خطأ في تحميل بيانات المستخدم: $e');
-      }
     }
   }
 
   Future<void> logout() async {
-    // مسح البيانات من التخزين الآمن مباشرة
     await _storage.deleteAll();
-    
-    // مسح البيانات من الذاكرة المؤقتة
-    _cachedToken = null;
-    _cachedUserData = null;
     _user = null;
     _apiService.removeTokenFromHeaders();
     _token = null;

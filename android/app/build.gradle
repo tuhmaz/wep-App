@@ -63,9 +63,10 @@ android {
             // Enable multidex for debug builds
             multiDexEnabled true
             // Enable code coverage
-            testCoverageEnabled true
             // Disable R8 in debug for faster builds
             matchingFallbacks = ['debug']
+            enableUnitTestCoverage true
+            enableAndroidTestCoverage true
         }
         release {
             debuggable false
@@ -82,9 +83,10 @@ android {
             
             // Enable R8 full mode
             matchingFallbacks = ['release']
-            
+            enableUnitTestCoverage false
+            enableAndroidTestCoverage false
+
             // Enable code coverage
-            testCoverageEnabled false
         }
     }
 
@@ -97,6 +99,11 @@ android {
             // keyPassword "your-key-password"
         }
     }
+    packaging {
+        jniLibs {
+            useLegacyPackaging false
+        }
+    }
 }
 
 // Enable desugaring for Java 8+ APIs
@@ -104,7 +111,7 @@ android.compileOptions.coreLibraryDesugaringEnabled = true
 
 dependencies {
     // Material Components
-    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'com.google.android.material:material:1.12.0'
     
     // Performance optimizations
     implementation 'androidx.core:core-splashscreen:1.0.1'
@@ -112,51 +119,52 @@ dependencies {
     implementation 'com.google.android.play:app-update-ktx:2.1.0'  // Kotlin extensions for Play Core
     
     // Optimize Firebase initialization
-    implementation 'com.google.firebase:firebase-analytics-ktx:21.5.0'
-    implementation 'com.google.firebase:firebase-perf-ktx:20.5.1'  // Firebase Performance Monitoring
+    implementation 'com.google.firebase:firebase-analytics-ktx:22.4.0'
+    implementation 'com.google.firebase:firebase-perf-ktx:21.0.5'
+    // Firebase Performance Monitoring
     
     // Optimize image loading
     implementation 'com.github.bumptech.glide:glide:4.16.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.16.0'
     // Core library desugaring for Java 8+ APIs on older Android versions
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     
     // AndroidX Core KTX
-    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.core:core-ktx:1.16.0'
     
     // Lifecycle components
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0'
-    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.7.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.9.0'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.0'
+    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.9.0'
     
     // Coroutines
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2'
     
     // WorkManager
-    implementation 'androidx.work:work-runtime-ktx:2.9.0'
+    implementation 'androidx.work:work-runtime-ktx:2.10.1'
     
     // Firebase
     implementation platform('com.google.firebase:firebase-bom:33.14.0')
-    implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-analytics:22.4.0'
     implementation 'com.google.firebase:firebase-messaging-ktx'
     
     // Google Play Services
-    implementation 'com.google.android.gms:play-services-auth:21.0.0'
+    implementation 'com.google.android.gms:play-services-auth:21.3.0'
     // Optimize AdMob
-    implementation 'com.google.android.gms:play-services-ads:23.1.0'
-    implementation 'com.google.android.gms:play-services-ads-identifier:18.0.1'
-    implementation 'com.google.android.gms:play-services-basement:18.2.0'
+    implementation 'com.google.android.gms:play-services-ads:24.3.0'
+    implementation 'com.google.android.gms:play-services-ads-identifier:18.2.0'
+    implementation 'com.google.android.gms:play-services-basement:18.7.0'
     
     // Support libraries
     implementation 'androidx.multidex:multidex:2.0.1'
-    implementation 'androidx.core:core-ktx:1.12.0'
-    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.core:core-ktx:1.16.0'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
     
     // Testing
     testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
 }
 
 flutter {
