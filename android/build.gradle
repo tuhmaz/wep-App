@@ -1,15 +1,22 @@
 buildscript {
-    ext.kotlin_version = '1.9.0'  // Updated to a stable version
+    ext.kotlin_version = '1.9.24'  // Using the latest stable Kotlin version
     repositories {
         google()
         mavenCentral()
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.9.2'
+        classpath 'com.android.tools.build:gradle:8.3.2'  // Using stable AGP version
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath 'com.google.gms:google-services:4.4.2'  // Google Services plugin
+        classpath 'com.google.gms:google-services:4.4.1'  // Google Services plugin
     }
+}
+
+// Configure project-wide properties
+ext {
+    compileSdkVersion = 35
+    targetSdkVersion = 35
+    minSdkVersion = 23
 }
 
 allprojects {

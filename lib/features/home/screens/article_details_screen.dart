@@ -426,7 +426,7 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                         children: [
                           Flexible(
                             child: Text(
-                              file.fileName ?? 'الملف',
+                              file.fileName,
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -444,7 +444,7 @@ class _ArticleDetailsScreenState extends State<ArticleDetailsScreen> {
                             MaterialPageRoute(
                               builder: (context) => DownloadScreen(
                                 fileUrl: 'https://alemedu.com/storage/${file.filePath}',
-                                fileName: file.fileName ?? 'الملف',
+                                fileName: file.fileName,
                               ),
                             ),
                           );

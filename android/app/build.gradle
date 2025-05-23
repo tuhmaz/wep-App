@@ -6,35 +6,85 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
 android {
+    // Enable build config generation
+    buildFeatures {
+        buildConfig true
+        viewBinding true
+    }
+    // Enable build config generation
+    buildFeatures {
+        buildConfig true
+    }
+    
+    // Enable view binding
+    buildFeatures {
+        viewBinding true
+    }
     namespace "com.alem.edu"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973"
+    compileSdkVersion rootProject.ext.compileSdkVersion
+    ndkVersion "27.0.12077973"
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+        coreLibraryDesugaringEnabled true  // Enable core library desugaring
     }
-
+    
     kotlinOptions {
         jvmTarget = '17'
     }
 
+    // Enable multidex
     defaultConfig {
+        multiDexEnabled true
+        vectorDrawables.useSupportLibrary = true
         applicationId "com.alem.edu"
         minSdk 23
         targetSdk flutter.targetSdkVersion
         versionCode flutter.versionCode
         versionName flutter.versionName
-        multiDexEnabled true
     }
 
     buildTypes {
+        debug {
+            debuggable true
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // Enable multidex for debug builds
+            multiDexEnabled true
+            // Enable code coverage
+            testCoverageEnabled true
+            // Disable R8 in debug for faster builds
+            matchingFallbacks = ['debug']
+        }
         release {
+            debuggable false
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-         //   signingConfig signingConfigs.release
+            // signingConfig signingConfigs.release
+            
+            // Optimize PNGs
+            crunchPngs true
+            
+            // Enable resource shrinking and code obfuscation
+            zipAlignEnabled true
+            
+            // Enable R8 full mode
+            matchingFallbacks = ['release']
+            
+            // Enable code coverage
+            testCoverageEnabled false
         }
     }
 
@@ -49,11 +99,64 @@ android {
     }
 }
 
+// Enable desugaring for Java 8+ APIs
+android.compileOptions.coreLibraryDesugaringEnabled = true
+
 dependencies {
+    // Material Components
+    implementation 'com.google.android.material:material:1.11.0'
+    
+    // Performance optimizations
+    implementation 'androidx.core:core-splashscreen:1.0.1'
+    implementation 'com.google.android.play:app-update:2.1.0'  // For in-app updates
+    implementation 'com.google.android.play:app-update-ktx:2.1.0'  // Kotlin extensions for Play Core
+    
+    // Optimize Firebase initialization
+    implementation 'com.google.firebase:firebase-analytics-ktx:21.5.0'
+    implementation 'com.google.firebase:firebase-perf-ktx:20.5.1'  // Firebase Performance Monitoring
+    
+    // Optimize image loading
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.16.0'
+    // Core library desugaring for Java 8+ APIs on older Android versions
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
+    
+    // AndroidX Core KTX
+    implementation 'androidx.core:core-ktx:1.12.0'
+    
+    // Lifecycle components
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0'
+    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.7.0'
+    
+    // Coroutines
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3'
+    
+    // WorkManager
+    implementation 'androidx.work:work-runtime-ktx:2.9.0'
+    
+    // Firebase
     implementation platform('com.google.firebase:firebase-bom:33.14.0')
     implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-messaging-ktx'
+    
+    // Google Play Services
     implementation 'com.google.android.gms:play-services-auth:21.0.0'
+    // Optimize AdMob
+    implementation 'com.google.android.gms:play-services-ads:23.1.0'
+    implementation 'com.google.android.gms:play-services-ads-identifier:18.0.1'
+    implementation 'com.google.android.gms:play-services-basement:18.2.0'
+    
+    // Support libraries
     implementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    
+    // Testing
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }
 
 flutter {

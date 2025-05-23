@@ -494,7 +494,7 @@ packages:
     source: hosted
     version: "0.3.3+1"
   google_mobile_ads:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: google_mobile_ads
       sha256: a4f59019f2c32769fb6c60ed8aa321e9c21a36297e2c4f23452b3e779a3e7a26
@@ -654,7 +654,7 @@ packages:
     source: hosted
     version: "0.7.2"
   leak_tracker:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: leak_tracker
       sha256: "6bb818ecbdffe216e81182c2f0714a2e62b593f4a4f13098713ff1685dfb6ab0"
@@ -662,7 +662,7 @@ packages:
     source: hosted
     version: "10.0.9"
   leak_tracker_flutter_testing:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: leak_tracker_flutter_testing
       sha256: f8b613e7e6a13ec79cfdc0e97638fddb3ab848452eff057653abd3edba760573
@@ -670,7 +670,7 @@ packages:
     source: hosted
     version: "3.0.9"
   leak_tracker_testing:
-    dependency: "direct dev"
+    dependency: transitive
     description:
       name: leak_tracker_testing
       sha256: "6ba465d5d76e67ddf503e1161d1f4a6bc42306f9d66ca1e8f079a47290fb06d3"
